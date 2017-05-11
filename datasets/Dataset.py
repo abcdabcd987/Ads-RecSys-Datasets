@@ -339,3 +339,8 @@ class Dataset:
 
     def __str__(self):
         return self.__class__.__name__
+
+
+def get_num_lines(filename):
+    with open(filename) as f:
+        return sum(1 for line in f)

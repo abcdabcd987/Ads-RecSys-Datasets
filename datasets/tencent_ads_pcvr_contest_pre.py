@@ -6,7 +6,7 @@ from Dataset import Dataset, get_num_lines
 
 
 class TencentAdsPcvrContestPreData(Dataset):
-    block_size = 2000000
+    block_size = 200000
     train_num_of_parts = 2
     test_num_of_parts = 1
     train_size = 0
@@ -18,7 +18,7 @@ class TencentAdsPcvrContestPreData(Dataset):
     train_pos_ratio = 0
     test_pos_ratio = 0
     initialized = 0
-    max_length = 863
+    max_length = 24
     num_features = 75387
     feat_names = ['_', 'adID', 'advertiserID', 'age', 'appCategory', 'appID', 'appPlatform', 'camgaignID', 
         'clickHour', 'clickWeekday', 'connectionType', 'creativeID', 'education', 'gender', 'haveBaby', 'hometown', 
@@ -35,7 +35,7 @@ class TencentAdsPcvrContestPreData(Dataset):
     hdf_data_dir = os.path.join(data_dir, 'hdf')
 
     def __init__(self, initialized=True, dir_path='../tencent-ads-pcvr-contest-pre', max_length=None, num_features=None,
-                 block_size=2000000):
+                 block_size=200000):
         """
         collect meta information, and produce hdf files if not exists
         :param initialized: write feature and hdf files if True
@@ -55,19 +55,39 @@ class TencentAdsPcvrContestPreData(Dataset):
             self.block_size = block_size
             if self.max_length is None or self.num_features is None:
                 print('Getting the maximum length and # features...')
-                min_train_length, max_train_length, max_train_feature = self.get_length_and_feature_number(
+                min_combine_length, max_combine_length, max_combine_feature = self.get_length_and_feature_number(
                     os.path.join(self.raw_data_dir, 'combine.txt'))
                 min_test_length, max_test_length, max_test_feature = self.get_length_and_feature_number(
                     os.path.join(self.raw_data_dir, 'test.txt'))
-                self.max_length = max(max_train_length, max_test_length)
-                self.num_features = max(max_train_feature, max_test_feature) + 1
+                self.max_length = max(max_combine_length, max_test_length)
+                self.num_features = max(max_combine_feature, max_test_feature) + 1
             print('max length = %d, # features = %d' % (self.max_length, self.num_features))
 
-            self.train_num_of_parts = self.raw_to_feature(raw_file='combine.txt',
+            self.combine_num_of_parts = self.raw_to_feature(raw_file='combine.txt',
+                                                          input_feat_file='combine_input.txt',
+                                                          output_feat_file='combine_output.txt')
+            self.feature_to_hdf(num_of_parts=self.combine_num_of_parts,
+                                file_prefix='combine',
+                                feature_data_dir=self.feature_data_dir,
+                                hdf_data_dir=self.hdf_data_dir,
+                                input_columns=self.feat_names,
+                                output_columns=['convert'])
+
+            self.train_num_of_parts = self.raw_to_feature(raw_file='train.txt',
                                                           input_feat_file='train_input.txt',
                                                           output_feat_file='train_output.txt')
             self.feature_to_hdf(num_of_parts=self.train_num_of_parts,
                                 file_prefix='train',
+                                feature_data_dir=self.feature_data_dir,
+                                hdf_data_dir=self.hdf_data_dir,
+                                input_columns=self.feat_names,
+                                output_columns=['convert'])
+
+            self.valid_num_of_parts = self.raw_to_feature(raw_file='valid.txt',
+                                                          input_feat_file='valid_input.txt',
+                                                          output_feat_file='valid_output.txt')
+            self.feature_to_hdf(num_of_parts=self.valid_num_of_parts,
+                                file_prefix='valid',
                                 feature_data_dir=self.feature_data_dir,
                                 hdf_data_dir=self.hdf_data_dir,
                                 input_columns=self.feat_names,
@@ -87,7 +107,7 @@ class TencentAdsPcvrContestPreData(Dataset):
         self.train_size, self.train_pos_samples, self.train_neg_samples, self.train_pos_ratio = \
             self.bin_count(self.hdf_data_dir, 'train', self.train_num_of_parts)
         self.test_size, self.test_pos_samples, self.test_neg_samples, self.test_pos_ratio = \
-            self.bin_count(self.hdf_data_dir, 'test', self.test_num_of_parts)
+            self.bin_count(self.hdf_data_dir, 'valid', self.test_num_of_parts)
         print('Initialization finished!')
 
     def raw_to_feature(self, raw_file, input_feat_file, output_feat_file):

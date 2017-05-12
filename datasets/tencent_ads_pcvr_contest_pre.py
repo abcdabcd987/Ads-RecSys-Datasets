@@ -7,8 +7,8 @@ from Dataset import Dataset, get_num_lines
 
 class TencentAdsPcvrContestPreData(Dataset):
     block_size = 200000
-    train_num_of_parts = 2
-    test_num_of_parts = 1
+    train_num_of_parts = 18
+    test_num_of_parts = 2
     train_size = 0
     test_size = 0
     train_pos_samples = 0
